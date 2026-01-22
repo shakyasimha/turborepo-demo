@@ -1,102 +1,222 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+"use client";
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
+import { useState, useEffect } from "react";
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
+// ============================================================================
+// STEP 1: Define what a Book looks like
+// ============================================================================
+interface Book {
+  id: number;
+  book_name: string;
+  author_name: string;
+  release_year: number;
+}
 
+// ============================================================================
+// STEP 2: Set your Django API URL
+// ============================================================================
+const API_URL = "http://localhost:8000/api/books";
+
+export default function BooksPage() {
+  // ========================================================================
+  // STEP 3: Create "boxes" to store data (called "state")
+  // ========================================================================
+  // Think of these as variables that automatically update the page when changed
+
+  const [books, setBooks] = useState<Book[]>([]); // List of all books
+  const [loading, setLoading] = useState(true); // Are we loading?
+  const [showForm, setShowForm] = useState(false); // Show/hide form
+
+  // Form data - what the user types
+  const [bookName, setBookName] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [year, setYear] = useState(2024);
+
+  // ========================================================================
+  // STEP 4: FETCH ALL BOOKS (READ) - Runs when page loads
+  // ========================================================================
+  const fetchBooks = async () => {
+    const response = await fetch(API_URL + "/"); // GET request
+    const data = await response.json(); // Convert to JavaScript
+    setBooks(data); // Update our books list
+    setLoading(false); // Stop loading
+  };
+
+  // Run fetchBooks() when page first loads
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  // ========================================================================
+  // STEP 5: CREATE NEW BOOK (CREATE)
+  // ========================================================================
+  const createBook = async () => {
+    // Send POST request to Django
+    await fetch(API_URL + "/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        book_name: bookName,
+        author_name: authorName,
+        release_year: year,
+      }),
+    });
+
+    // Clear form and refresh books
+    setBookName("");
+    setAuthorName("");
+    setYear(2024);
+    setShowForm(false);
+    fetchBooks(); // Reload the list
+  };
+
+  // ========================================================================
+  // STEP 6: DELETE BOOK (DELETE)
+  // ========================================================================
+  const deleteBook = async (id: number) => {
+    // Send DELETE request to Django
+    await fetch(`${API_URL}/${id}/`, {
+      method: "DELETE",
+    });
+
+    fetchBooks(); // Reload the list
+  };
+
+  // ========================================================================
+  // STEP 7: DISPLAY THE PAGE (HTML-like code)
+  // ========================================================================
   return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+      {/* Header */}
+      <h1>📚 Book Management</h1>
+      <button
+        onClick={() => setShowForm(!showForm)}
+        style={{
+          padding: "10px 20px",
+          background: "#0070f3",
+          color: "white",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+          marginBottom: "20px",
+        }}
+      >
+        {showForm ? "Cancel" : "Add New Book"}
+      </button>
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Form - Only shows when showForm is true */}
+      {showForm && (
+        <div
+          style={{
+            background: "#f5f5f5",
+            padding: "20px",
+            borderRadius: "8px",
+            marginBottom: "20px",
+          }}
+        >
+          <input
+            type="text"
+            placeholder="Book Title"
+            value={bookName}
+            onChange={(e) => setBookName(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Author Name"
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+            }}
+          />
+          <input
+            type="number"
+            placeholder="Year"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "10px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+            }}
+          />
+          <button
+            onClick={createBook}
+            style={{
+              padding: "10px 20px",
+              background: "#10b981",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+            Save Book
+          </button>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
+      )}
+
+      {/* Loading message */}
+      {loading && <p>Loading books...</p>}
+
+      {/* Books List */}
+      <div>
+        {books.map((book) => (
+          <div
+            key={book.id}
+            style={{
+              background: "white",
+              padding: "15px",
+              marginBottom: "10px",
+              borderRadius: "8px",
+              border: "1px solid #ddd",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <h3 style={{ margin: "0 0 5px 0" }}>{book.book_name}</h3>
+              <p style={{ margin: 0, color: "#666" }}>
+                by {book.author_name} ({book.release_year})
+              </p>
+            </div>
+            <button
+              onClick={() => deleteBook(book.id)}
+              style={{
+                padding: "8px 16px",
+                background: "#ef4444",
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {!loading && books.length === 0 && (
+        <p style={{ textAlign: "center", color: "#666" }}>
+          No books yet. Click "Add New Book" to get started!
+        </p>
+      )}
     </div>
   );
 }

@@ -55,7 +55,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 
 CORS_ALLOWED_ORIGINS = [
-    "https://turborepo-demo-poai.onrender.com/",
+    "https://ecast-workshop.vercel.app/",
     "http://localhost:3000",
 ]
 
